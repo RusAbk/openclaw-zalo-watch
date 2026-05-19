@@ -1,19 +1,20 @@
 # Zalo Watch — OpenClaw Skill
 
-Monitor Zalo conversations, extract tasks/agreements/important info, and track task completion status.
+Monitor Zalo conversations (both Group and Personal 1-on-1 chats) in real-time, extract tasks/agreements/important info, and track task completion status.
 
 ## What it does
 
-- **Login** to Zalo via QR code (one-time setup)
-- **Scan** all group chats and collect recent messages
-- **Analyze** messages to extract tasks, agreements, and important information
-- **Track** task completion by checking for follow-up messages
+- **Interactive Terminal Login**: Generates Zalo login QR codes directly inside your terminal stdout as clean ASCII graphics using dynamic QR decoding.
+- **Real-Time Listener Daemon**: Leverages WebSocket connection under the hood to continuously capture incoming messages from both **Group and Personal (1-on-1) chats**.
+- **PM2 Built-in Daemon Management**: Easily start, stop, check status, and monitor daemon logs in the background.
+- **Information Extractor**: Scans and parses collected messages to extract tasks, agreements, and important information.
+- **Task Tracking**: Automatically checks open tasks against recent messages in their respective source chats to track completion status.
 
 ## Requirements
 
 - Node.js v18+
 - Active Zalo personal account
-- OpenClaw agent (to run AI analysis)
+- PM2 (automatically installed as a dependency)
 
 ## Installation
 
@@ -23,117 +24,102 @@ cd openclaw-zalo-watch
 npm install
 ```
 
+---
+
 ## Usage
 
-### 1. Login to Zalo
+### 1. Login to Zalo (One-Time Setup)
 
 ```bash
 npm run login
 ```
 
-This generates a QR code at `data/qr.png`. Scan it with the Zalo mobile app (Settings → Scan QR). Session credentials are saved automatically.
+This starts the authentication client, dynamically decodes the Zalo server QR code, and prints a **clean ASCII QR art** directly into your terminal. Scan it with your Zalo mobile app (**Settings → Scan QR**). The session will be saved automatically to `data/session.json`.
 
-### 2. Scan conversations
+---
 
-```bash
-npm run scan
-```
+### 2. Start the Real-Time Background Daemon (PM2)
 
-Fetches recent messages from all Zalo groups and saves raw data to `data/messages/`.
+Since Zalo's API does not allow fetching historical personal (1-on-1) chat logs, a real-time listener daemon is used to continuously capture incoming messages in the background.
 
-### 3. Analyze messages
+To start and manage the daemon:
 
-After scanning, the collected messages should be analyzed to extract:
+*   **Start the daemon**:
+    ```bash
+    npm run daemon:start
+    ```
+    *This runs the listener under PM2 with the process name `zalo-watch`.*
 
-- **Tasks** — action items, requests, things someone needs to do
-- **Agreements** — decisions made, things people agreed on
-- **Important** — urgent info, blockers, critical updates
+*   **Check status**:
+    ```bash
+    npm run daemon:status
+    ```
 
-Results are stored in `data/zalo-watch.json`.
+*   **View real-time logs**:
+    ```bash
+    npm run daemon:logs
+    ```
 
-### 4. Check task completion
+*   **Stop the daemon**:
+    ```bash
+    npm run daemon:stop
+    ```
+
+All captured messages are instantly saved to `data/messages/` in an array format compatible with `analyze.js`.
+
+---
+
+### 3. Analyze Messages (AI Extraction)
+
+Once messages are collected (via the real-time daemon or batch group scan), they are processed to extract structured information:
+
+*   **Tasks** — Action items, assignments, or expectations.
+*   **Agreements** — Commitments, decisions, or consensus points.
+*   **Important** — Blockers, announcements, or urgent status updates.
+
+Results are compiled into `data/zalo-watch.json`.
+
+---
+
+### 4. Check Task Completion
 
 ```bash
 npm run check-tasks
 ```
 
-Checks open tasks against recent messages in their source chats, looking for completion indicators (e.g. "готово", "сделано", "done", "completed").
+Reviews all open tasks inside `data/zalo-watch.json`, cross-references recent chat messages, and updates task statuses to `"done"` if it matches completion phrases (e.g. "готово", "сделано", "done").
 
-## Data format
+---
 
-`data/zalo-watch.json`:
-
-```json
-{
-  "tasks": [
-    {
-      "id": 1,
-      "title": "Brief task title",
-      "description": "**Original message excerpt**\n\nFull message: ...",
-      "source": {
-        "chat": "Group Name",
-        "chatId": "123456",
-        "type": "group",
-        "date": "2026-05-19",
-        "sender": "Sender Name",
-        "messageId": "msg_abc123"
-      },
-      "status": "open",
-      "created_at": "2026-05-19T12:00:00Z",
-      "updated_at": "2026-05-19T12:00:00Z"
-    }
-  ],
-  "agreements": [
-    {
-      "id": 1,
-      "description": "**Agreement excerpt**\n\nFull message: ...",
-      "source": { "chat": "...", "chatId": "...", "type": "group", "date": "...", "sender": "...", "messageId": "..." },
-      "created_at": "2026-05-19T12:00:00Z"
-    }
-  ],
-  "important": [
-    {
-      "id": 1,
-      "description": "**Important info**\n\nFull message: ...",
-      "source": { "chat": "...", "chatId": "...", "type": "group", "date": "...", "sender": "...", "messageId": "..." },
-      "created_at": "2026-05-19T12:00:00Z"
-    }
-  ],
-  "scannedMessages": {
-    "msg_abc123": true
-  },
-  "lastScan": "2026-05-19T12:00:00Z"
-}
-```
-
-## File structure
+## File Structure
 
 ```
 openclaw-zalo-watch/
-├── SKILL.md              # OpenClaw skill instructions
+├── SKILL.md              # OpenClaw skill instructions for AI agents
 ├── README.md             # This file
 ├── package.json
 ├── .gitignore
 ├── data/
-│   ├── session.json      # Zalo session (auto-generated, do not commit)
-│   ├── qr.png            # QR code for login (auto-generated)
-│   ├── zalo-watch.json   # Extracted tasks/agreements/important
-│   └── messages/         # Raw scanned messages
+│   ├── session.json      # Zalo session keys (auto-generated, do not commit)
+│   ├── qr.png            # Downloaded QR code image (auto-generated)
+│   ├── zalo-watch.json   # Unified JSON database for tasks/agreements/alerts
+│   └── messages/         # Saved raw messages
 └── src/
-    ├── session.js        # Session management
-    ├── login.js          # QR login script
-    ├── scan.js           # Message collection script
-    ├── check-tasks.js    # Task completion checker
-    └── analyze.js        # Analysis utilities
+    ├── session.js        # Session parser
+    ├── login.js          # QR login with dynamic decoding
+    ├── listen.js         # Real-time WebSocket listener daemon
+    ├── scan.js           # Batch group history scanner
+    ├── check-tasks.js    # Task completion heuristic checker
+    └── analyze.js        # Main message parsing & merging library
 ```
+
+---
 
 ## Notes
 
-- Only group chat history is currently supported
-- Personal (1-on-1) chat history requires a different API approach
-- Task completion checking uses keyword heuristics — results are suggestive, not definitive
-- Session persists until Zalo expires it; re-run `npm run login` if auth fails
-- Uses [zca-js](https://github.com/RFS-ADRENO/zca-js) — unofficial Zalo API for personal accounts
+- **Personal (1-on-1) Chats**: Fully supported in real-time when the PM2 daemon is running.
+- **Single Session Limitation**: Only **one** WebSocket listener session can be active per Zalo account. Opening Zalo Web in another browser while the daemon is listening will drop the socket connection.
+- **Uses [zca-js](https://github.com/RFS-ADRENO/zca-js)**: Unofficial Zalo API wrapper for personal accounts.
 
 ## Disclaimer
 

@@ -1,5 +1,8 @@
 import { Zalo, LoginQRCallbackEventType } from "zca-js";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import qrcode from "qrcode-terminal";
+import { PNG } from "pngjs";
+import jsQR from "jsqr";
 
 const QR_PATH = "data/qr.png";
 
@@ -10,6 +13,19 @@ function ensureDataDir() {
 function saveSession(credentials) {
     writeFileSync("data/session.json", JSON.stringify(credentials, null, 2));
     console.log("\n✅ Session saved to data/session.json");
+}
+
+function getDecodedQRContent(imageBuffer) {
+    try {
+        const png = PNG.sync.read(imageBuffer);
+        const decoded = jsQR(png.data, png.width, png.height);
+        if (decoded && decoded.data) {
+            return decoded.data;
+        }
+    } catch (err) {
+        // Silent fallback
+    }
+    return null;
 }
 
 async function loginAttempt(zalo, resolve, reject) {
@@ -24,8 +40,17 @@ async function loginAttempt(zalo, resolve, reject) {
                         const imageData = event.data.image;
                         ensureDataDir();
                         writeFileSync(QR_PATH, imageData, "base64");
-                        console.log(`\n📱 QR code saved to ${QR_PATH}`);
+                        
+                        const imageBuffer = Buffer.from(imageData, "base64");
+                        const decodedLink = getDecodedQRContent(imageBuffer);
+                        const qrLink = decodedLink || `https://id.zalo.me/account/authen/qr/scan?code=${event.data.code}`;
+                        
+                        console.log("\n=== ZALO LOGIN QR CODE ===");
+                        qrcode.generate(qrLink, { small: true });
+                        console.log("==========================\n");
+                        console.log(`📱 QR code saved to ${QR_PATH}`);
                         console.log("   Scan it with Zalo app (Settings → Scan QR)");
+                        console.log(`   Link: ${qrLink}`);
                         console.log("   Waiting for scan...\n");
                         break;
                     }
@@ -37,7 +62,7 @@ async function loginAttempt(zalo, resolve, reject) {
                     case LoginQRCallbackEventType.GotLoginInfo: {
                         console.log("🔐 Login successful!");
                         saveSession(event.data);
-                        resolve(api);
+                        resolve();
                         break;
                     }
                     case LoginQRCallbackEventType.QRCodeExpired: {

@@ -6,9 +6,18 @@
   "scripts": {
     "login": "node src/login.js",
     "scan": "node src/scan.js",
-    "check": "node src/check-tasks.js"
+    "listen": "node src/listen.js",
+    "check": "node src/check-tasks.js",
+    "daemon:start": "pm2 start src/listen.js --name zalo-watch",
+    "daemon:stop": "pm2 stop zalo-watch",
+    "daemon:status": "pm2 status zalo-watch",
+    "daemon:logs": "pm2 logs zalo-watch"
   },
   "dependencies": {
+    "jsqr": "^1.4.0",
+    "pm2": "^7.0.1",
+    "pngjs": "^7.0.0",
+    "qrcode-terminal": "^0.12.0",
     "zca-js": "^2.1.2"
   }
 }

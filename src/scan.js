@@ -1,5 +1,5 @@
 import { getAPI } from "./session.js";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 
 const DATA_FILE = "data/zalo-watch.json";
 const MESSAGES_DIR = "data/messages";
@@ -7,7 +7,6 @@ const SCAN_COUNT = 50;
 
 function ensureDir(dir) {
     if (!existsSync(dir)) {
-        const { mkdirSync } = require("node:fs");
         mkdirSync(dir, { recursive: true });
     }
 }
