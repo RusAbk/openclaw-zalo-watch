@@ -27,8 +27,13 @@ Use this skill when the user asks to:
    ```bash
    npm run login
    ```
-   This generates a QR code at `data/qr.png`. Scan it with the Zalo app.
-   Session credentials are saved to `data/session.json`.
+   This generates a QR code at `data/qr.png`. 
+   
+   **IMPORTANT**: Always send the QR code image directly to the user in the same channel they requested the login from (e.g. Telegram, Discord). Do not just print the file path — the user may not have access to the server filesystem. Use the `read` tool to load the image and send it as an attachment.
+   
+   The QR code expires in ~30 seconds. If it expires, run the login command again and send the new QR immediately.
+   
+   Once scanned and confirmed, session credentials are saved to `data/session.json`.
 
 ## Workflow
 
