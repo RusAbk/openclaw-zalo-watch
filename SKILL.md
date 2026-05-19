@@ -4,7 +4,7 @@ Monitor Zalo conversations, extract tasks/agreements/important info, and track t
 
 ## When to use
 
-Use this skill when Руслан asks to:
+Use this skill when the user asks to:
 - Scan Zalo chats for tasks, agreements, or important information
 - Check if existing tasks have been completed in Zalo conversations
 - Get a summary of open tasks/agreements from Zalo
@@ -126,7 +126,7 @@ Read `data/zalo-watch.json` and present:
 
 ## Notes
 
-- Only group chat history is supported (personal chats require a different API approach)
+- Only group chat history is currently supported (personal chats require a different API approach)
 - The `scan` script collects raw messages; AI analysis is done separately
 - Task completion checking uses keyword heuristics — results are suggestive, not definitive
 - Session persists until Zalo expires it; re-run `npm run login` if auth fails
