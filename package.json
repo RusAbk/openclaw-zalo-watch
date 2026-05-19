@@ -1,0 +1,14 @@
+{
+  "name": "openclaw-zalo-watch",
+  "version": "1.0.0",
+  "description": "OpenClaw skill: Zalo chat monitor - extract tasks, agreements and important info",
+  "type": "module",
+  "scripts": {
+    "login": "node src/login.js",
+    "scan": "node src/scan.js",
+    "check": "node src/check-tasks.js"
+  },
+  "dependencies": {
+    "zca-js": "^2.1.2"
+  }
+}
